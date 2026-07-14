@@ -2,9 +2,9 @@
 T1 自动标注服务 - FastAPI 入口。
 
 三个接口：
-  POST /annotate              内容标注
-  POST /annotate_account      账号类别判断
-  POST /annotate_event_heat   事件热度判断
+  POST /annotate_content       内容标注
+  POST /annotate_account_type  账号类别判断
+  POST /annotate_event_heat    事件热度判断
 
 对应 docs/T1标注接口规约.md（课题四后端仓库）。
 """
@@ -52,12 +52,12 @@ def health() -> dict:
     return {"status": "ok"}
 
 
-@app.post("/annotate", response_model=AnnotateResponse)
+@app.post("/annotate_content", response_model=AnnotateResponse)
 def annotate(request: AnnotateRequest) -> AnnotateResponse:
     return annotate_service.annotate(request)
 
 
-@app.post("/annotate_account", response_model=AnnotateAccountResponse)
+@app.post("/annotate_account_type", response_model=AnnotateAccountResponse)
 def annotate_account(request: AnnotateAccountRequest) -> AnnotateAccountResponse:
     return account_service.annotate_account(request)
 

@@ -194,7 +194,7 @@ def test_422_validation_errors_are_logged_with_detail(caplog):
 
     client = TestClient(app)
     with caplog.at_level(logging.ERROR):
-        resp = client.post("/annotate", json={"medias": "not-a-list"})
+        resp = client.post("/annotate_content", json={"medias": "not-a-list"})
 
     assert resp.status_code == 422
     assert any("422 Unprocessable Entity" in record.message for record in caplog.records)

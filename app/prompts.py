@@ -40,7 +40,7 @@ Required JSON shape:
       "entitiesHint": [{"entityHintId": "ent_001", "text": "...", "typeHint": "persons|organizations|events|locations|media_contents|social_accounts|narratives|others|unknown", "entityHintConfidence": 0.0, "evidenceIds": []}],
       "keywords": [{"keywordText": "...", "keywordConfidence": 0.0, "evidenceIds": []}],
       "summary": {"summaryText": "...", "summaryConfidence": 0.0},
-      "eventType": {"eventTypeLabel": "military_conflict|diplomatic_dispute|policy_announcement|election_campaign|protest_demonstration|economic_sanction|cyber_incident|public_health_event|disaster_accident|crime_public_safety|social_livelihood_event|public_opinion_event|other|unclear|not_applicable", "eventTypeConfidence": 0.0, "evidenceIds": []}
+      "topicType": {"topicTypeLabel": "military_conflict|diplomatic_dispute|policy_announcement|election_campaign|protest_demonstration|economic_sanction|cyber_incident|public_health_event|disaster_accident|crime_public_safety|social_livelihood_event|public_opinion_event|other|unclear|not_applicable", "topicTypeConfidence": 0.0, "evidenceIds": []}
     }
   },
   "evidenceClues": [{"evidenceId": "ev_001", "evidenceType": "text_span", "source": "text", "evidenceText": "...", "span": [0,10]}],

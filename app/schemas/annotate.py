@@ -180,9 +180,9 @@ class Summary(CamelModel):
     summary_confidence: Optional[float] = None
 
 
-class EventType(CamelModel):
-    event_type_label: str = "not_applicable"
-    event_type_confidence: Optional[float] = None
+class TopicType(CamelModel):
+    topic_type_label: str = "not_applicable"
+    topic_type_confidence: Optional[float] = None
     evidence_ids: list[str] = []
 
 
@@ -191,7 +191,7 @@ class BasicObjective(CamelModel):
     entities_hint: list[EntityHint] = []
     keywords: list[Keyword] = []
     summary: Summary = Summary()
-    event_type: EventType = EventType()
+    topic_type: TopicType = TopicType()
 
 
 class Annotations(CamelModel):

@@ -112,7 +112,7 @@ def _build_fallback_response(request: AnnotateRequest, has_text: bool, has_image
         failed_modules=[
             "textAigcDetection", "ideology", "coreStance", "opinionEmotion", "languageStyle",
             "manipulationMethod", "riskLevel", "topicTags", "entitiesHint", "keywords",
-            "summary", "eventType",
+            "summary", "topicType",
         ],
     )
     response.overall_confidence = 0.0
