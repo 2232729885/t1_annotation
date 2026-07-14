@@ -133,3 +133,48 @@ def test_null_list_fields_are_treated_as_empty():
     )
     assert request.medias == []
     assert request.context.hashtags == []
+
+
+def test_llm_client_limits_concurrent_requests(monkeypatch):
+    """
+    2026-07-14生产环境真实事故：并发请求太多、其中又有带图片的多模态请求，
+    把vLLM的GPU显存压爆导致整个引擎崩溃（CUDA OOM in _merge_multimodal_embeddings）。
+    这里验证 LlmClient 内部的信号量确实把同时真正打给vLLM的请求数限制住了，
+    多出来的请求会排队等，不会一股脑全部并发发过去。
+    """
+    import threading
+    import time
+    from unittest.mock import MagicMock, patch
+
+    monkeypatch.setenv("LLM_MAX_CONCURRENT_REQUESTS", "2")
+    from app.llm_client import LlmClient
+
+    with patch("app.llm_client.OpenAI") as mock_openai_cls:
+        mock_client = MagicMock()
+        mock_openai_cls.return_value = mock_client
+        mock_response = MagicMock()
+        mock_response.choices = [MagicMock(message=MagicMock(content='{"ok": true}'))]
+
+        concurrent_count = [0]
+        max_concurrent = [0]
+        lock = threading.Lock()
+
+        def slow_create(*args, **kwargs):
+            with lock:
+                concurrent_count[0] += 1
+                max_concurrent[0] = max(max_concurrent[0], concurrent_count[0])
+            time.sleep(0.1)
+            with lock:
+                concurrent_count[0] -= 1
+            return mock_response
+
+        mock_client.chat.completions.create.side_effect = slow_create
+
+        client = LlmClient()
+        threads = [threading.Thread(target=client.call_json, args=("sys", "user")) for _ in range(6)]
+        for t in threads:
+            t.start()
+        for t in threads:
+            t.join()
+
+        assert max_concurrent[0] <= 2
