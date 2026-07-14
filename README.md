@@ -35,7 +35,7 @@ uvicorn app.main:app --reload --port 8001
 docker build -t t1-annotation:latest .
 
 # .env 参照 .env.example 先建好，填真实的 LLM_BASE_URL 等
-docker run -d -p 8001:8001 --env-file .env --name t1-annotation t1-annotation:latest
+docker run -d -p 5000:5000 --env-file .env --name t1-annotation t1-annotation:latest
 
 # 如果 vLLM 部署在宿主机上（不是内网其他机器），容器内访问宿主机用 host.docker.internal
 # （Linux 上可能需要 docker run 加 --add-host=host.docker.internal:host-gateway）
@@ -45,7 +45,7 @@ docker run -d -p 8001:8001 --env-file .env --name t1-annotation t1-annotation:la
 
 ```bash
 docker logs -f t1-annotation
-curl http://localhost:8001/health
+curl http://localhost:5000/health
 ```
 
 ## 目录结构
