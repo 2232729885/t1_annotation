@@ -109,3 +109,27 @@ def test_annotate_event_heat_no_related_content():
         }
     )
     assert response.event_heat.heat_level == "unclear"
+
+
+def test_null_list_fields_are_treated_as_empty():
+    """
+    Java DTO 的 List<X> 字段没有值时，Jackson 序列化出来是显式的 null，不是省略key也不是[]。
+    这里模拟真实报错场景：medias 和 context.hashtags 都显式传 null，应该被当成空列表处理，
+    不能直接校验失败（这是2026-07-14生产环境真实报过的一个422错误）。
+    """
+    request = AnnotateRequest.model_validate(
+        {
+            "title": None,
+            "text": "some text",
+            "language": "en",
+            "medias": None,
+            "context": {
+                "contentId": "abc123",
+                "platform": "reddit",
+                "contentType": "comment",
+                "hashtags": None,
+            },
+        }
+    )
+    assert request.medias == []
+    assert request.context.hashtags == []
