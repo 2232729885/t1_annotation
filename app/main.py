@@ -10,7 +10,9 @@ T1 自动标注服务 - FastAPI 入口。
 """
 import logging
 
-from fastapi import FastAPI
+from fastapi import FastAPI, Request
+from fastapi.exceptions import RequestValidationError
+from fastapi.responses import JSONResponse
 
 from app.config import get_settings
 from app.schemas.annotate import AnnotateRequest, AnnotateResponse
@@ -20,12 +22,29 @@ from app.services import account_service, annotate_service, event_heat_service
 
 settings = get_settings()
 logging.basicConfig(level=settings.log_level)
+logger = logging.getLogger(__name__)
 
 app = FastAPI(
     title="T1 Annotation Service",
     description="内容标注 / 账号类别判断 / 事件热度判断，课题四 T1 算法接口实现",
     version="0.6.0",
 )
+
+
+@app.exception_handler(RequestValidationError)
+async def validation_exception_handler(request: Request, exc: RequestValidationError) -> JSONResponse:
+    """
+    FastAPI 默认422只把detail塞进响应体返回给调用方，自己的容器日志里不会打印具体原因。
+    这里补一份服务端自己的日志，以后422发生时直接在这个服务的容器日志里就能看到详细原因，
+    不用再靠调用方（Java后端）那边的异常堆栈去猜（后端那边如果这个调用被try-catch包住
+    只记了warn甚至没记日志，两边都会看不到具体是哪个字段的问题）。
+    """
+    body = await request.body()
+    logger.error(
+        "422 Unprocessable Entity on %s %s\nvalidation errors: %s\nraw request body: %s",
+        request.method, request.url.path, exc.errors(), body.decode("utf-8", errors="replace")[:5000],
+    )
+    return JSONResponse(status_code=422, content={"detail": exc.errors()})
 
 
 @app.get("/health")
