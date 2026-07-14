@@ -29,7 +29,17 @@ def _resolve_modality_combination(has_text: bool, has_images: bool, has_videos: 
     return "text"
 
 
-def _build_user_prompt(request: AnnotateRequest) -> str:
+def _build_user_content(request: AnnotateRequest):
+    """
+    返回值可能是纯字符串（没有图片时），也可能是 OpenAI 多模态格式的 content 数组
+    （有图片时）——只有 image 类型的媒体会真的作为图片发给模型看，video 目前只在文字里
+    描述URL（vLLM/Qwen3-VL 对视频输入的支持不如图片稳定和标准化，暂时不直接传视频内容，
+    等确认模型/vLLM版本对视频输入的支持情况后再考虑升级）。
+
+    注意：模型要能看到图片，vLLM 服务本身必须能访问到这个图片URL（通常是MinIO地址），
+    如果 vLLM 部署的网络访问不到 MinIO，这里传了图片URL过去模型也看不到，
+    请确认内网网络策略允许 vLLM 所在机器访问 MinIO。
+    """
     parts: list[str] = []
     if request.title:
         parts.append(f"Title: {request.title}")
@@ -57,13 +67,30 @@ def _build_user_prompt(request: AnnotateRequest) -> str:
         if engagement_bits:
             parts.append("Engagement: " + ", ".join(engagement_bits))
 
-    if request.medias:
-        media_lines = [f"- {m.media_type}: {m.url}" for m in request.medias]
-        parts.append("Attached media:\n" + "\n".join(media_lines))
-    else:
+    image_urls = [m.url for m in request.medias if m.media_type == "image"]
+    video_urls = [m.url for m in request.medias if m.media_type == "video"]
+
+    if image_urls:
+        parts.append(f"{len(image_urls)} image(s) attached below for you to analyze directly.")
+    if video_urls:
+        video_lines = "\n".join(f"- {url}" for url in video_urls)
+        parts.append(
+            "Video attached (URL only, video content itself is not passed to you, "
+            "judge based on title/text/context and mark video-specific fields as unclear "
+            "if there isn't enough textual signal):\n" + video_lines
+        )
+    if not request.medias:
         parts.append("No media attached (text-only input).")
 
-    return "\n\n".join(parts) if parts else "(empty input)"
+    text_content = "\n\n".join(parts) if parts else "(empty input)"
+
+    if not image_urls:
+        return text_content
+
+    content: list[dict] = [{"type": "text", "text": text_content}]
+    for url in image_urls:
+        content.append({"type": "image_url", "image_url": {"url": url}})
+    return content
 
 
 def _build_fallback_response(request: AnnotateRequest, has_text: bool, has_images: bool, has_videos: bool) -> AnnotateResponse:
@@ -99,7 +126,7 @@ def annotate(request: AnnotateRequest) -> AnnotateResponse:
     has_videos = any(m.media_type == "video" for m in request.medias)
 
     try:
-        raw = get_llm_client().call_json(ANNOTATE_SYSTEM_PROMPT, _build_user_prompt(request))
+        raw = get_llm_client().call_json(ANNOTATE_SYSTEM_PROMPT, _build_user_content(request))
         response = AnnotateResponse.model_validate(raw)
     except (LlmCallError, ValidationError) as exc:
         logger.error("annotate failed, falling back: %s", exc)

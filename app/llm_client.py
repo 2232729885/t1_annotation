@@ -32,9 +32,12 @@ class LlmClient:
         self._use_json_response_format = settings.llm_use_json_response_format
         self._disable_thinking = settings.llm_disable_thinking
 
-    def call_json(self, system_prompt: str, user_prompt: str) -> dict:
+    def call_json(self, system_prompt: str, user_content) -> dict:
         """
         调用大模型，要求返回一个JSON对象。
+        user_content 可以是纯字符串，也可以是 OpenAI 多模态格式的 content 数组
+        （比如 [{"type": "text", "text": "..."}, {"type": "image_url", "image_url": {"url": "..."}}]），
+        由调用方决定要不要带图片——只有 annotate_service 在有图片时会传数组，其余接口都是传字符串。
         自动重试 self._max_retries 次；全部失败则抛出 LlmCallError，由上层走 fallback。
         """
         last_error: Exception | None = None
@@ -51,7 +54,7 @@ class LlmClient:
                     model=self._model,
                     messages=[
                         {"role": "system", "content": system_prompt},
-                        {"role": "user", "content": user_prompt},
+                        {"role": "user", "content": user_content},
                     ],
                     temperature=self._temperature,
                     max_tokens=self._max_tokens,

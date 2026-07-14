@@ -79,6 +79,8 @@ Dockerfile
 - 枚举字段（`ideologyLabel`/`stanceLabel`等）用 `str` 类型而不是 `Literal` 强校验——大模型偶尔的轻微用词偏差不应该导致整个请求直接报错，具体取值范围写在提示词和字段注释里。
 - **`llm_client.py` 会自动剥离 `<think>...</think>`**——Qwen3 是推理模型，vLLM 部署时如果没有关掉思考模式，返回内容前面可能带一段思考过程，这段会被自动去掉再解析JSON。
 - **`LLM_USE_JSON_RESPONSE_FORMAT`**：vLLM 是否支持 `response_format={"type":"json_object"}` 取决于具体版本和启动参数，如果你们的 vLLM 部署不支持这个参数导致报错，在 `.env` 里把这个改成 `false`，代码会跳过这个参数，靠提示词 + 兜底解析（markdown围栏清理、JSON片段截取）来保证输出解析成JSON。
+- **`LLM_DISABLE_THINKING`**：默认关闭Qwen3的思考模式（通过 `extra_body.chat_template_kwargs.enable_thinking=false` 传给vLLM），结构化抽取任务不需要思考过程，关掉能显著减少生成耗时和超时概率。
+- **`/annotate` 接口如果带了图片，会真的把图片作为视觉内容发给模型**（`annotate_service._build_user_content()`，OpenAI多模态 `image_url` 格式），不是只在文字里描述URL——**这要求部署的模型本身支持视觉输入**（比如 Qwen3-VL 系列，不能是纯文本的 Qwen3），并且 vLLM 所在机器网络上要能访问到图片URL（通常是MinIO地址），访问不到的话图片实际上还是看不到。视频目前不直接传视觉内容（vLLM/Qwen3-VL对视频输入的支持不如图片稳定），只在文字里描述URL。
 
 ## 测试
 

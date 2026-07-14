@@ -61,6 +61,12 @@ Rules:
    empty array if none apply. Use lowercase values (engage/explain/excite/...), not capitalized.
 8. coreStance.stanceTarget describes what the content's stance is generically directed at
    (an event/policy/person/etc as a category + a short text description), not a resolved graph entity.
+9. If images are attached, they are provided directly in this message for you to actually look at -
+   base imageAigcDetection/multimodalAigcDetection on what you actually observe in the image
+   (visual artifacts, face/hand anomalies, text rendering, lighting, etc.), not just on the fact
+   that an image exists. Videos are referenced by URL only (not passed as visual content to you) -
+   for videoAigcDetection use "unclear"/"not_applicable" unless there is enough textual/contextual
+   signal to judge, do not fabricate visual observations you did not actually see.
 """
 
 ANNOTATE_ACCOUNT_SYSTEM_PROMPT = """You are an account classification system. Given a social media account profile, return only
